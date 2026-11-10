@@ -1,0 +1,38 @@
+name: Build RoundBlocks
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Extract source ZIP if supplied
+        shell: bash
+        run: |
+          if [ -f RoundBlocks-source-fixed.zip ]; then
+            unzip -oq RoundBlocks-source-fixed.zip -d .
+          fi
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Build mod
+        run: gradle build --no-daemon
+      - name: Build 2048px PBR resource pack
+        run: python3 -m pip install Pillow && python3 tools/make_resourcepack.py
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: RoundBlocks-build
+          path: |
+            build/libs/*remapped*.jar
+            build/libs/*.jar
+            RoundBlocks-PBR-2048.zip
